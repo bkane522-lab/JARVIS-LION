@@ -2,12 +2,23 @@ export const runtime = "nodejs";
 
 export async function POST(request) {
   try {
-    const apiKey = process.env.GEMINI_API_KEY;
-    const model = process.env.GEMINI_MODEL || "gemini-3.5-flash-lite";
+    // Compatibilité avec les 2 noms possibles dans Vercel.
+    // Ta clé Gemini est actuellement enregistrée sous OPENAI_API_KEY,
+    // donc on l'accepte aussi pour éviter l'erreur "GEMINI_API_KEY absente".
+    const apiKey =
+      process.env.GEMINI_API_KEY ||
+      process.env.OPENAI_API_KEY;
+
+    const model =
+      process.env.GEMINI_MODEL ||
+      "gemini-3.5-flash-lite";
 
     if (!apiKey) {
       return Response.json(
-        { error: "GEMINI_API_KEY est absente dans Vercel." },
+        {
+          error:
+            "Aucune clé Gemini trouvée. Vérifie GEMINI_API_KEY ou OPENAI_API_KEY dans Vercel."
+        },
         { status: 500 }
       );
     }
@@ -16,7 +27,10 @@ export async function POST(request) {
     const messages = Array.isArray(body?.messages) ? body.messages : [];
 
     if (!messages.length) {
-      return Response.json({ error: "Aucun message reçu." }, { status: 400 });
+      return Response.json(
+        { error: "Aucun message reçu." },
+        { status: 400 }
+      );
     }
 
     const contents = messages
@@ -28,7 +42,8 @@ export async function POST(request) {
       }));
 
     const url =
-      `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
+      `https://generativelanguage.googleapis.com/v1beta/models/` +
+      `${encodeURIComponent(model)}:generateContent`;
 
     const geminiResponse = await fetch(url, {
       method: "POST",
@@ -62,10 +77,21 @@ export async function POST(request) {
     const data = await geminiResponse.json().catch(() => ({}));
 
     if (!geminiResponse.ok) {
-      const googleMessage = data?.error?.message || "Erreur Gemini inconnue";
-      console.error("Gemini API:", geminiResponse.status, googleMessage);
+      const googleMessage =
+        data?.error?.message ||
+        "Erreur Gemini inconnue";
+
+      console.error(
+        "Gemini API:",
+        geminiResponse.status,
+        googleMessage
+      );
+
       return Response.json(
-        { error: `Gemini ${geminiResponse.status} : ${googleMessage}` },
+        {
+          error:
+            `Gemini ${geminiResponse.status} : ${googleMessage}`
+        },
         { status: 502 }
       );
     }
@@ -86,8 +112,13 @@ export async function POST(request) {
     return Response.json({ text });
   } catch (error) {
     console.error("JARVIS /api/chat:", error);
+
     return Response.json(
-      { error: "Erreur interne lors de l'appel à Gemini." },
+      {
+        error:
+          error?.message ||
+          "Erreur interne lors de l'appel à Gemini."
+      },
       { status: 500 }
     );
   }
