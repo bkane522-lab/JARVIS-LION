@@ -1,0 +1,10 @@
+{
+  "name": "JARVIS — Assistant personnel",
+  "short_name": "JARVIS",
+  "description": "Assistant vocal personnel",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#060606",
+  "theme_color": "#090909",
+  "lang": "fr"
+}
